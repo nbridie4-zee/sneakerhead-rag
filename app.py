@@ -1,100 +1,83 @@
-import streamlit as st
-import os
-
-from langchain_text_splitters import CharacterTextSplitter
-from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings, HuggingFaceEndpoint
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-
+import gradio as gr
 from dotenv import load_dotenv
-import os
+from implementation.answer import answer_question
 
-load_dotenv()
+load_dotenv(override=True)
 
-HUGGINGFACEHUB_API_TOKEN=""
 
-docs = []
+def format_context(docs):
+    """Format retrieved context for display."""
+    result = ""
+    for doc in docs:
+        source = doc.metadata.get("filename", "Unknown")
+        doc_type = doc.metadata.get("doc_type", "Sneaker")
+        result += f"👟 Source: {source} ({doc_type})\n\n{doc.page_content}\n\n{'-'*50}\n\n"
+    return result
 
-for file in os.listdir("documents"):
-    if file.endswith(".txt"):
-        with open(f"documents/{file}", "r", encoding="utf-8") as f:
-            docs.append(f.read())
 
-splitter = CharacterTextSplitter(chunk_size=200, chunk_overlap=20)
-docs = splitter.split_text("\n".join(docs))
+def chat(message, history):
+    """Handle user input and return assistant response."""
+    history = history or []
 
-embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
+    answer, docs = answer_question(message, history)
 
-db = FAISS.from_texts(docs, embeddings)
-retriever = db.as_retriever(search_kwargs={"k": 3})
+    history.append({"role": "user", "content": message})
+    history.append({"role": "assistant", "content": answer})
 
-from langchain_huggingface import HuggingFaceEndpoint
+    return "", history, format_context(docs)
 
-llm = HuggingFaceEndpoint(
-    repo_id="HuggingFaceH4/zephyr-7b-beta",
-    task="text-generation",
-    huggingfacehub_api_token=api_key,
-    temperature=0.2,
-    max_new_tokens=256
-)
 
-prompt = PromptTemplate.from_template("""
-Answer the question using ONLY the context.
+def main():
+    with gr.Blocks(title="Sneakerhead AI Assistant") as ui:
+        gr.Markdown("""
+        # 👟 Sneakerhead AI Assistant
 
-If the answer is not in the context, say:
-I don't know based on the data.
+        Your personal guide to sneaker culture, brands, and history! 
+        Ask me anything about:
+        - 👟 Sneaker brands (Nike, Adidas, Puma, etc.)
+        - 🏀 Iconic models (Air Jordan, Yeezy, Air Max)
+        - 📅 Sneaker history and releases
+        - 💡 Sneaker culture and collecting
 
-Context:
-{context}
+        *Disclaimer: I provide information based on available data. For the latest releases and prices, check official sources.*
+        """)
 
-Question:
-{question}
+        with gr.Row():
+            with gr.Column(scale=2):
+                chatbot = gr.Chatbot(
+                    label="💬 Conversation",
+                    height=500,
+                    avatar_images=("👟", "🤖")
+                )
+                message = gr.Textbox(
+                    placeholder="Ask about sneakers, brands, models, or history...",
+                    show_label=False,
+                    lines=2
+                )
+            with gr.Column(scale=1):
+                context_box = gr.Textbox(
+                    label="📚 Retrieved Knowledge Base",
+                    lines=25,
+                    interactive=False
+                )
 
-Answer:
-""")
+        message.submit(chat, inputs=[message, chatbot], outputs=[message, chatbot, context_box])
 
-def format_docs(docs):
-    return "\n\n".join([d.page_content for d in docs])
+        gr.Markdown("""
+        ---
+        **How this works:** I search through a comprehensive sneaker knowledge base
+        to provide you with accurate information about sneaker brands, models, and culture.
+        """)
 
-rag_chain = (
-    {"context": retriever | format_docs, "question": RunnablePassthrough()}
-    | prompt
-    | llm
-)
 
-st.title("👟 Sneakerhead AI Assistant")
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-
-query = st.chat_input("Ask something about sneakers...")
-
-if query:
-    st.session_state.messages.append({"role": "user", "content": query})
-
-    with st.chat_message("user"):
-        st.markdown(query)
-
-    retrieved_docs = retriever.invoke(query)
-
-    with st.expander("Retrieved Context"):
-        st.write(format_docs(retrieved_docs))
-
-    result = rag_chain.invoke(query)
-
-    if isinstance(result, dict):
-        response = result.get("result") or result.get("answer") or str(result)
-    else:
-        response = str(result)
-
-    st.session_state.messages.append({"role": "assistant", "content": response})
-
-    with st.chat_message("assistant"):
-        st.markdown(response)
+if __name__ == "__main__":
+    main()
+    ui.launch(theme=gr.themes.Soft(), css="""
+        .gradio-container {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .chatbot-container {
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+        }
+    """)
