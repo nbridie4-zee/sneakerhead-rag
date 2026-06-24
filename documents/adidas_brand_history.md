@@ -9,7 +9,7 @@ Adi Dassler was a passionate athlete and craftsman who created the first spiked 
 ## Iconic Brand Identity
 
 ### The Three Stripes
-The famous Three Stripes were introduced in 1967 and represent the company's commitment to versatility and performance. The stripes originally provided additional support to the shoe structure and became Adidas's trademark visual identity.
+The famous Three Stripes(|||) were introduced in 1967 and represent the company's commitment to versatility and performance. The stripes originally provided additional support to the shoe structure and became Adidas's trademark visual identity.
 
 ### The Trefoil Logo
 The three-leaf trefoil logo was introduced in 1972. Each leaf represents one of Adidas's three core values:
