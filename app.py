@@ -6,7 +6,7 @@ load_dotenv(override=True)
 
 
 def format_context(docs):
-    """Format retrieved context for display."""
+    """Format retrieved context for display.."""
     result = ""
     for doc in docs:
         source = doc.metadata.get("filename", "Unknown")
