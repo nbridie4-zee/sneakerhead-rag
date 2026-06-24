@@ -17,7 +17,7 @@ A Retrieval-Augmented Generation (RAG) chatbot that answers questions about snea
 ## Features
 
 - Ask questions about sneaker brands (Nike, Adidas, Puma)
-- Learn about iconic models (Air Jordan, Yeezy, Air Max)
+- Learn about iconic models (Air Jordan, Yeezy, Air Max )
 - Get information about sneaker history and culture
 - Friendly, knowledgeable AI assistant
 
